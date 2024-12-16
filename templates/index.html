@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Summarizer</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://unpkg.com/docx/build/index.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --background-color: #f4f7f6;
+            --text-color: #333;
+            --white: #ffffff;
+            --border-radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        /* Navigation Styling */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: var(--white);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Main Content Styling */
+        .summarizer-card {
+            background-color: var(--white);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+
+        }
+
+        .file-upload {
+            border: 2px dashed var(--primary-color);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            max-width: 600px;
+        }
+
+
+        .file-upload:hover {
+            background-color: rgba(60, 170, 182, 0.263);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        #input-text {
+            width: 100%;
+            min-height: 200px;
+            border: 1px solid #3a7e93ee;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            resize: vertical;
+            background-color: #e3f2f671;
+            margin-bottom: 20px;
+        }
+
+        .summary-type {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .summary-type label {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .summary-type input[type="radio"] {
+            display: none;
+        }
+
+        .summary-type input[type="radio"]:checked+label {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border-color: var(--primary-color);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .slider-container input[type="range"] {
+            flex-grow: 1;
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-generate:hover {
+            background-color: #3a7bd5;
+        }
+
+        .summary-result {
+            background-color: var(--background-color);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Responsive Media Queries */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 15px;
+            }
+
+            .nav-links {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .summarizer-card {
+                padding: 20px;
+            }
+
+            .summary-type {
+                flex-direction: column;
+            }
+
+            .summary-type label {
+                flex: none;
+                width: 100%;
+            }
+
+            .slider-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .slider-container span {
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+                padding: 20px;
+            }
+        }
+
+        /* Mobile Small Screen Adjustments */
+        @media screen and (max-width: 480px) {
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+
+            .nav-links {
+                gap: 10px;
+            }
+
+            .nav-links a {
+                font-size: 0.9rem;
+            }
+
+            .summarizer-card {
+                padding: 15px;
+            }
+
+            .file-upload {
+                padding: 20px;
+            }
+
+            #input-text {
+                min-height: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="container navbar">
+        <div class="navbar-brand">AI Summarizer</div>
+        <div class="nav-links">
+            <a href="#" onclick="openModal('login-modal')">Login</a>
+            <a href="#" onclick="openModal('signup-modal')">Sign Up</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="summarizer-card">
+            <!-- File Upload -->
+            <div class="file-upload" onclick="document.getElementById('file-input').click()">
+                <input type="file" id="file-input" class="file-input" accept=".txt,.pdf,.docx"
+                    onchange="handleFileUpload(event)">
+                <p>Click to upload or drag and drop files</p>
+            </div>
+
+            <!-- Text Input -->
+            <textarea id="input-text" placeholder="Enter or paste your text here(atleast 50 words)..."></textarea>
+
+            <!-- Summary Type Selection -->
+            <div class="summary-type">
+                <input type="radio" id="extractive" name="summary-type" value="extractive">
+                <label for="extractive">Extractive Summary</label>
+
+                <input type="radio" id="abstractive" name="summary-type" value="abstractive">
+                <label for="abstractive">Abstractive Summary</label>
+            </div>
+
+            <!-- Summary Length Slider -->
+            <div class="slider-container">
+                <input type="range" id="summary-size" min="5" max="95" value="30">
+                <span id="summary-size-display">30%</span>
+            </div>
+
+            <!-- Generate Button -->
+            <button class="btn-generate" onclick="sendData()">
+                Generate Summary
+            </button>
+
+            <!-- Summary Result -->
+            <div class="summary-result">
+                <h3>Summary</h3>
+                <p id="summary-output">Your summary will appear here...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('login-modal')">&times;</span>
+            <h2>Login</h2>
+            <form>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" class="form-control" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" class="form-control" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="modal-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('signup-modal')">&times;</span>
+            <h2>Sign Up</h2>
+            <form>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" class="form-control" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" class="form-control" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" class="form-control" placeholder="Create a password" required>
+                </div>
+                <button type="submit" class="modal-btn">Sign Up</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // File Upload Handler
+        // function handleFileUpload(event) {
+        //     const file = event.target.files[0];
+        //     if (file) {
+        //         const reader = new FileReader();
+        //         reader.onload = function (e) {
+        //             document.getElementById('input-text').value = e.target.result;
+        //         };
+        //         reader.readAsText(file);
+        //     }
+        // }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            // Determine the file type
+            const fileType = file.type;
+
+            if (fileType === "text/plain") {
+                // Handle text files
+                reader.onload = function (e) {
+                    document.getElementById("input-text").value = e.target.result;
+                };
+                reader.readAsText(file);
+            } else if (fileType === "application/pdf") {
+                // Handle PDF files using pdf.js
+                reader.onload = function (e) {
+                    const typedArray = new Uint8Array(e.target.result);
+
+                    pdfjsLib.getDocument(typedArray).promise.then((pdf) => {
+                        let textContent = "";
+                        const pagePromises = [];
+
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            pagePromises.push(
+                                pdf.getPage(i).then((page) =>
+                                    page.getTextContent().then((text) => {
+                                        text.items.forEach((item) => {
+                                            textContent += item.str + " ";
+                                        });
+                                    })
+                                )
+                            );
+                        }
+
+                        Promise.all(pagePromises).then(() => {
+                            document.getElementById("input-text").value = textContent.trim();
+                        });
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (
+                fileType ===
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ) {
+                // Handle Word files using docx.js
+                reader.onload = function (e) {
+                    const arrayBuffer = e.target.result;
+
+                    const doc = new docx.Document(arrayBuffer);
+                    let textContent = "";
+
+                    doc.load().then(() => {
+                        doc.paragraphs.forEach((paragraph) => {
+                            textContent += paragraph.text + "\n";
+                        });
+                        document.getElementById("input-text").value = textContent.trim();
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert("Unsupported file type. Please upload a text, PDF, or Word file.");
+            }
+        }
+
+
+        function sendData() {
+            const inputText = document.getElementById('input-text').value;
+            // const summaryType = document.querySelector('input[name="summary-type"]:checked').value;
+            const summaryType = document.querySelector('input[name="summary-type"]:checked');
+            const selectedValue = summaryType ? summaryType.value : null;
+            const summarySize = summarySizeSlider.value;
+
+            const requestData = {
+                text: inputText,
+                type: selectedValue,
+                size: summarySize
+            };
+
+            fetch('http://127.0.0.1:5000/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    // Display the response from Flask
+                    document.getElementById('summary-output').innerText = data.summary;
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    document.getElementById('summary-output').innerText = 'Error connecting to Flask';
+                });
+        }
+
+
+        // Summary Size Slider
+        const summarySizeSlider = document.getElementById('summary-size');
+        const summarySizeDisplay = document.getElementById('summary-size-display');
+
+        summarySizeSlider.addEventListener('input', function () {
+            summarySizeDisplay.textContent = `${this.value}%`;
+        });
+
+        // Generate Summary
+        function generateSummary() {
+            // var text=""
+            // const fileInput = document.getElementById('file-Input');
+
+            // file-Input.addEventListener('change', (event) => {
+            //     const file = event.target.files[0];
+
+            //     if(file){
+            //         const reader = new FileReader();
+            //         reader.onload = function(e) {
+            //         text = e.target.result; // Display file content
+            //     };
+            //     }
+            // });
+            const inputText = document.getElementById('input-text').value;
+            const summaryType = document.querySelector('input[name="summary-type"]:checked');
+            const summarySize = summarySizeSlider.value;
+            const summaryOutput = document.getElementById('summary-output');
+
+            if (!inputText) {
+                alert('Please enter text to summarize');
+                return;
+            }
+
+            if (!summaryType) {
+                alert('Please select a summary type');
+                return;
+            }
+
+            // Simulated summary generation
+            const words = inputText.split(' ');
+            const summaryLength = Math.floor(words.length * (summarySize / 100));
+            const summary = words.slice(0, summaryLength).join(' ') + '...';
+
+            summaryOutput.textContent = summary;
+        }
+
+        // Modal Functionality
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const modals = document.getElementsByClassName('modal');
+            for (let modal of modals) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>
