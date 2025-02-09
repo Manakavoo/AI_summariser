@@ -1,6 +1,6 @@
 
 import nltk
-# nltk.download("stopwords")
+# nltk.download("stopwords") //uncomment to download for first time
 # nltk.download('punkt_tab') 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
