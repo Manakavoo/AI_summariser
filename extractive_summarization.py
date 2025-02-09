@@ -1,154 +1,79 @@
 
-# import re
-# import string
-# from collections import Counter
+import nltk
+# nltk.download("stopwords")
+# nltk.download('punkt_tab') 
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize, sent_tokenize
+from string import punctuation
 
-# def clean_text(text):
-#     """
-#     Clean the input text by removing punctuation and converting to lowercase.
-    
-#     Args:
-#         text (str): Input text to clean
-    
-#     Returns:
-#         str: Cleaned text
-#     """
-#     # Remove punctuation
-#     text = text.translate(str.maketrans('', '', string.punctuation))
-    
-#     # Convert to lowercase
-#     text = text.lower()
-    
-#     return text
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize, sent_tokenize
+import string
 
-# def split_sentences(text):
-#     """
-#     Split text into sentences using regex.
-    
-#     Args:
-#         text (str): Input text to split
-    
-#     Returns:
-#         list: List of sentences
-#     """
-#     # Split on periods, exclamation points, and question marks
-#     sentences = re.split(r'(?<=[.!?])\s+', text)
-    
-#     # Remove any empty sentences and strip whitespace
-#     sentences = [sentence.strip() for sentence in sentences if sentence.strip()]
-    
-#     return sentences
 
-# def calculate_word_frequencies(sentences):
-#     """
-#     Calculate word frequencies across all sentences.
-    
-#     Args:
-#         sentences (list): List of sentences
-    
-#     Returns:
-#         Counter: Word frequencies
-#     """
-#     # Combine all sentences
-#     full_text = ' '.join(sentences)
-    
-#     # Clean the text
-#     cleaned_text = clean_text(full_text)
-    
-#     # Split into words
-#     words = cleaned_text.split()
-    
-#     # Remove common stop words
-#     stop_words = set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'])
-#     words = [word for word in words if word not in stop_words]
-    
-#     # Calculate word frequencies
-#     return Counter(words)
+# DOCUMENT ="""Theodore Finch and Violet Markey are two teenagers who live unhappily in a small Indiana town. Violet is quietly dealing with survivor guilt after the death of her sister and Finch is a loner, called a freak by other students. They meet on the bridge where Violet's sister died in a car crash nine months earlier. Violet survived the crash, and has not been in a car since. She finds herself standing on the ledge of the bridge on what would have been her sister's nineteenth birthday. Finch, out for a run, sees Violet on the ledge and climbs up next to her, talking her down from a possible suicide.
+#     Finch begins a partnership with Violet for a school project that requires the students to explore Indiana together. Later, at home, Finch looks up Violet on Facebook, researching her sister's car accident, reading through Violet's old writing, and chatting with her online. Finch and Violet travel around Indiana to see sites chosen by him for the project. Violet refuses to travel by car, so they bike to the highest point in Indiana. However, to visit a miniature roller coaster too far away to bike to, Violet agrees to get in his car. She returns to writing, for the first time since her sister's death. He helps her talk about her sister, which no one else had managed to do. Violet slowly begins to heal. They fall in love.
+#     However, Finch's behavior becomes more erratic. He sometimes disappears for days at a time without contacting anyone. One day, while he and Violet are swimming at the Blue Hole, he disappears under the water. By the time he resurfaces, Violet is distraught and pushes him to tell her more about himself, threatening to leave if he doesn't comply. He reveals that he had been physically abused by his father as a child, and that his mother is absent in his life.
+#     On one occasion, Finch and Violet stay out all night by accident, upsetting Violet's parents. At school that day, Finch loses his temper on Violet's ex-boyfriend, Roamer, after Roamer calls him a freak. The two boys fight in the hall, and Finch takes off in his car. Violet, who broke up the fight, ends up in the principal's office with Finch's friend, Charlie. While they talk, Finch attends a support group session in a nearby town, recommended to him by Mr. Embry, the school guidance counselor. There, he runs into Amanda, Violet’s friend, who opens up to the group about her bulimia and two suicide attempts. Once Violet leaves the school, she heads to Finch's house. Since he is still at the meeting, she talks with Finch's sister, Kate, who then leaves for work. While she is working, at a bar, Finch enters and prompts her to talk about their father. This causes her to worry about him, though he reassures her. He leaves for their house, where Violet is waiting. In his room, she begs him to open up to her. He shouts at her to leave.
+#     Finch disappears again. Violet tells her father how she and Finch met, and expresses her concern over his latest disappearance. He suggests she check in places they had visited together. She drives to the Blue Hole, where she finds Finch's clothes and phone abandoned, and correctly infers that he has drowned. Some time later, she attends his funeral.
+#     While healing from Finch's suicide, Violet finds the map they used for travel around Indiana, and notices the last location they were supposed to visit together marked in red. It's the Travelers' Prayers Chapel, a resting place for travelers and a place of healing for mourners. She finds his signature in the guest book.
+#     With Finch gone, Violet must present their school project alone. She reads aloud her writing on the lessons Finch taught her. In the last scene, Violet swims by herself in the Blue Hole."""
 
-# def score_sentences(sentences, word_frequencies):
-#     """
-#     Score sentences based on word frequencies.
+def extractive_sum(text, summary_percentage=20):    
+    try:
+        nltk.download('punkt', quiet=True)
+        nltk.download('stopwords', quiet=True)
+    except:
+        pass
     
-#     Args:
-#         sentences (list): List of sentences
-#         word_frequencies (Counter): Word frequencies
+    stop_words = set(stopwords.words("english"))
+    punctuation_set = set(string.punctuation)
     
-#     Returns:
-#         dict: Sentence scores
-#     """
-#     sentence_scores = {}
+    words = word_tokenize(text.lower())
     
-#     for i, sentence in enumerate(sentences):
-#         # Clean the sentence
-#         cleaned_sentence = clean_text(sentence)
+    freq_table = {}
+    for word in words:
+        if word in stop_words or word in punctuation_set:
+            continue
         
-#         # Split into words
-#         words = cleaned_sentence.split()
+        freq_table[word] = freq_table.get(word, 0) + 1
+    
+    sentences = sent_tokenize(text)
+    
+    sentence_values = {}
+    for sentence in sentences:
+        lower_sentence = sentence.lower()
         
-#         # Calculate score based on word frequencies
-#         score = sum(word_frequencies[word] for word in words)
+        sentence_score = sum(
+            freq_table.get(word, 0) 
+            for word in word_tokenize(lower_sentence) 
+            if word in freq_table
+        )
         
-#         sentence_scores[i] = score
+        sentence_values[sentence] = sentence_score
     
-#     return sentence_scores
-
-# def extractive_summarize(text, num_sentences=6):
-#     """
-#     Generate an extractive summary of the input text.
+    if sentence_values:
+        sorted_sentences = sorted(
+            sentence_values.items(), 
+            key=lambda x: x[1], 
+            reverse=True
+        )
+        
+        target_length = len(text) * (summary_percentage / 100)
+        
+        summary_sentences = []
+        current_length = 0
+        
+        for sentence, _ in sorted_sentences:
+            if current_length < target_length:
+                summary_sentences.append(sentence)
+                current_length += len(sentence)
+            else:
+                break
+        
+        summary = ' '.join(summary_sentences)
+        
+        return summary
     
-#     Args:
-#         text (str): Input text to summarize
-#         num_sentences (int, optional): Number of sentences in the summary. Defaults to 3.
-    
-#     Returns:
-#         str: Extractive summary
-#     """
-#     # Split text into sentences
-#     sentences = split_sentences(text)
-    
-#     # Ensure num_sentences doesn't exceed total sentences
-#     num_sentences = min(num_sentences, len(sentences))
-    
-#     # Calculate word frequencies
-#     word_frequencies = calculate_word_frequencies(sentences)
-    
-#     # Score sentences
-#     sentence_scores = score_sentences(sentences, word_frequencies)
-    
-#     # Sort sentences by score in descending order
-#     top_sentence_indices = sorted(
-#         sentence_scores, 
-#         key=sentence_scores.get, 
-#         reverse=True
-#     )[:num_sentences]
-    
-#     # Sort indices to maintain original text order
-#     top_sentence_indices.sort()
-    
-#     # Construct summary
-#     summary = ' '.join([sentences[i] for i in top_sentence_indices])
-    
-#     return summary
-
-# # Example usage
-# def main():
-#     # Sample text for demonstration
-#     sample_text = """
-#     Technologies are becoming increasingly complicated and increasingly interconnected. Cars, airplanes, medical devices, financial transactions, and electricity systems all rely on more computer software than they ever have before, making them seem both harder to understand and, in some cases, harder to control. Government and corporate surveillance of individuals and information processing relies largely on digital technologies and artificial intelligence, and therefore involves less human-to-human contact than ever before and more opportunities for biases to be embedded and codified in our technological systems in ways we may not even be able to identify or recognize. Bioengineering advances are opening up new terrain for challenging philosophical, political, and economic questions regarding human-natural relations. Additionally, the management of these large and small devices and systems is increasingly done through the cloud, so that control over them is both very remote and removed from direct human or social control. The study of how to make technologies like artificial intelligence or the Internet of Things “explainable” has become its own area of research because it is so difficult to understand how they work or what is at fault when something goes wrong (Gunning and Aha 2019).
-
-# This growing complexity makes it more difficult than ever—and more imperative than ever—for scholars to probe how technological advancements are altering life around the world in both positive and negative ways and what social, political, and legal tools are needed to help shape the development and design of technology in beneficial directions. This can seem like an impossible task in light of the rapid pace of technological change and the sense that its continued advancement is inevitable, but many countries around the world are only just beginning to take significant steps toward regulating computer technologies and are still in the process of radically rethinking the rules governing global data flows and exchange of technology across borders.
-
-# These are exciting times not just for technological development but also for technology policy—our technologies may be more advanced and complicated than ever but so, too, are our understandings of how they can best be leveraged, protected, and even constrained. The structures of technological systems as determined largely by government and institutional policies and those structures have tremendous implications for social organization and agency, ranging from open source, open systems that are highly distributed and decentralized, to those that are tightly controlled and closed, structured according to stricter and more hierarchical models. And just as our understanding of the governance of technology is developing in new and interesting ways, so, too, is our understanding of the social, cultural, environmental, and political dimensions of emerging technologies. We are realizing both the challenges and the importance of mapping out the full range of ways that technology is changing our society, what we want those changes to look like, and what tools we have to try to influence and guide those shifts.
-#     """
-    
-#     # Generate summary
-#     summary = extractive_summarize(sample_text)
-    
-#     print("Original Text:")
-#     print(len(sample_text))
-#     print("\nSummary:")
-#     print(summary)
-
-# if __name__ == "__main__":
-#     main()
-
+    return ""
