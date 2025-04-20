@@ -10,7 +10,9 @@ import os
 
 
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 app.secret_key = "secret_key"  # Required for session handling
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -118,9 +120,12 @@ def summarize():
 
 
 if __name__ == '__main__':
+    # Create the database tables if they don't exist yet
     with app.app_context():
         db.create_all()
-    
-    port = int(os.environ.get("PORT", 5000))  # default to 5000 locally
-    app.run(host='0.0.0.0', port=port, debug=True)
+
+    # Run the application (disable debug mode in production)
+    port = int(os.environ.get("PORT", 5000))  # Default to 5000 locally
+    app.run(host='0.0.0.0', port=port, debug=False)
+
 

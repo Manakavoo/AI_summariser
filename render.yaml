@@ -2,9 +2,7 @@ services:
   - type: web
     name: flask-api
     env: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python app.py"
-    envVars:
-      - key: FLASK_ENV
-        value: production
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    runtime: python
+    pythonVersion: 3.10.11
