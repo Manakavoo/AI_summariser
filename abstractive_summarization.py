@@ -9,6 +9,7 @@ if os.getenv("RENDER") is None:  # Render automatically sets 'RENDER' in hosted 
 API_KEY=os.getenv("GEMINI_API_KEY")
 from google import genai
 
+
 def abstractive_sum(text,summary_percentage=30):
     return gemini_summary(text,summary_percentage)
 
