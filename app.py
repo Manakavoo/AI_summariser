@@ -6,7 +6,7 @@ from abstractive_summarization import abstractive_sum
 from flask_sqlalchemy import SQLAlchemy
 
 from flask_cors import CORS
-
+import os
 
 
 app = Flask(__name__)
@@ -116,7 +116,6 @@ def summarize():
 #         db.create_all()  
 #     app.run(debug=True)
 
-import os
 
 if __name__ == '__main__':
     with app.app_context():
