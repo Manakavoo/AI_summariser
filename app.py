@@ -27,7 +27,7 @@ class User(db.Model):
     password = db.Column(db.String(100), nullable=False)
 
 # Home Page
-@app.route('/',methodS=['GET'])
+@app.route('/',methods=['GET'])
 def home():
     return jsonify({"Response": "connected successfully"})
     # return render_template('login.html')
