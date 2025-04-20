@@ -5,7 +5,12 @@ from extractive_summarization import extractive_sum
 from abstractive_summarization import abstractive_sum
 from flask_sqlalchemy import SQLAlchemy
 
+from flask_cors import CORS
+
+
+
 app = Flask(__name__)
+CORS(app)
 app.secret_key = "secret_key"  # Required for session handling
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -22,7 +27,8 @@ class User(db.Model):
 # Home Page
 @app.route('/')
 def index():
-    return render_template('login.html')
+    {"Response": "connected sucessfully"}
+    # return render_template('login.html')
 
 
 # Registration Route

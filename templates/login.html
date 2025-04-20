@@ -251,7 +251,7 @@
     </div>
 
     <script>
-      const API_URL = "http://127.0.0.1:5000/";
+      const API_URL = "http://127.0.0.1:5000";
 
       const signUpButton = document.getElementById("signUp");
       const signInButton = document.getElementById("signIn");
@@ -270,7 +270,7 @@
         var email = document.getElementById("login-email").value;
         var password = document.getElementById("login-password").value;
         
-        fetch('/login', {
+        fetch(API_URL+'/login', {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -284,7 +284,13 @@
           .then((data) => {
             console.log(data);
             if (data.Msg === "login-success") {
-              window.location.href = "/home";
+              var path =window.location.href;
+              path = path.replace("login", "home");
+              console.log("window.location.href", path);
+              // setTimeout(() => {
+              //   window.location.href = path;
+              // }, 1000);
+              window.location.href = path;
               showNotification("Login successful", "success");
             } else {
               // alert('Login failed');
@@ -303,7 +309,7 @@
         var email = document.getElementById("email").value;
         var password = document.getElementById("password").value;
 
-        fetch("/register", {
+        fetch(API_URL+"/register", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

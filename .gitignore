@@ -9,6 +9,7 @@ __pycache__/
 .vscode/
 .idea/
 
+.env
 # Ignore logs
 *.log
 instance/
