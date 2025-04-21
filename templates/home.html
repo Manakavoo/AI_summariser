@@ -11,6 +11,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
     />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"></script>
 
     <style>
       :root {
@@ -321,8 +322,8 @@
       /* Loader Animation */
       .loader {
         display: none;
-        border: 8px solid #f3f3f3; 
-        border-top: 8px solid #3498db; 
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #3498db;
         border-radius: 50%;
         width: 50px;
         height: 50px;
@@ -349,13 +350,13 @@
 
       /* Styling for the popup */
       .popup {
-        display: none; 
+        display: none;
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.5); 
+        background-color: rgba(0, 0, 0, 0.5);
         justify-content: center;
         align-items: center;
       }
@@ -386,20 +387,21 @@
       }
 
       /* Profile picture styling */
-.profile-pic {
-    width: 50px; /* Set the width of the image */
-    height: 50px; /* Set the height of the image */
-    object-fit: cover; /* Ensures the image covers the area without distortion */
-    border-radius: 50%; /* Make the image circular */
-    border: 3px solid #c61414; /* Optional: Adds a border around the image */
-    margin: 20px 0; /* Optional: Adds spacing above and below the image */
-    display: block; /* Ensures the image is treated as a block element */
-    margin-left: auto;
-    margin-right: auto;
-}
-
+      .profile-pic {
+        width: 50px; /* Set the width of the image */
+        height: 50px; /* Set the height of the image */
+        object-fit: cover; /* Ensures the image covers the area without distortion */
+        border-radius: 50%; /* Make the image circular */
+        border: 3px solid #c61414; /* Optional: Adds a border around the image */
+        margin: 20px 0; /* Optional: Adds spacing above and below the image */
+        display: block; /* Ensures the image is treated as a block element */
+        margin-left: auto;
+        margin-right: auto;
+      }
     </style>
   </head>
+
+  <!-- Home.html -->
 
   <body>
     <div
@@ -423,12 +425,8 @@
 
     <!-- Navigation -->
     <nav class="container navbar">
-
       <div class="navbar-brand">AI Summarizer</div>
       <div class="nav-links">
-        
-        <!-- <img  class="profile-pic" src="{{ url_for('static',filename='images/default_profile.png') }}" alt="Your Image"> -->
-
         <a
           href="#"
           class="btn btn-primary btn-lg active"
@@ -436,10 +434,6 @@
           onclick="logout()"
           >Logout</a
         >
-        <!-- <a href="#" >Profile</a> -->
-       
-      </div>      <!-- <a href="#" onclick="openModal('signup-modal')">Sign Up</a> -->
-      
       </div>
     </nav>
 
@@ -473,7 +467,6 @@
             value="extractive"
           />
           <label for="extractive">Extractive Summary</label>
-
           <input
             type="radio"
             id="abstractive"
@@ -492,7 +485,6 @@
           Generate Summary
         </button>
         <div id="loader" class="loader"></div>
-        <!-- <div id="summary-output"></div> -->
 
         <div class="summary-result">
           <h3>Summary</h3>
@@ -501,95 +493,83 @@
       </div>
     </div>
 
-    <!-- Login Modal -->
-    <div id="login-modal" class="modal">
-      <div class="modal-content">
-        <span class="modal-close" onclick="closeModal('login-modal')"
-          >&times;</span
-        >
-        <h2></h2>
-        <form>
-          <!-- <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" class="form-control" placeholder="Enter your email" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" class="form-control" placeholder="Enter your password" required>
-                </div> -->
-          <button type="submit" class="modal-btn">Are u sure to logout?</button>
-        </form>
-      </div>
-    </div>
-
-
     <script>
+      // Use consistent API_URL that matches your Flask app
+      const API_URL = window.location.origin;
 
       function handleFileUpload(event) {
         const file = event.target.files[0];
-
         if (!file) return;
 
         const reader = new FileReader();
-
         const fileType = file.type;
 
+        // For text files
         if (fileType === "text/plain") {
           reader.onload = function (e) {
             document.getElementById("input-text").value = e.target.result;
           };
           reader.readAsText(file);
-        } else if (fileType === "application/pdf") {
-          reader.onload = function (e) {
-            const typedArray = new Uint8Array(e.target.result);
-
-            pdfjsLib.getDocument(typedArray).promise.then((pdf) => {
-              let textContent = "";
-              const pagePromises = [];
+        }
+        // For PDF files
+        else if (fileType === "application/pdf") {
+          const loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
+          loadingTask.promise
+            .then(function (pdf) {
+              let pagesText = "";
+              let pagesPromises = [];
 
               for (let i = 1; i <= pdf.numPages; i++) {
-                pagePromises.push(
-                  pdf.getPage(i).then((page) =>
-                    page.getTextContent().then((text) => {
-                      text.items.forEach((item) => {
-                        textContent += item.str + " ";
-                      });
-                    })
-                  )
+                pagesPromises.push(
+                  pdf.getPage(i).then(function (page) {
+                    return page.getTextContent().then(function (textContent) {
+                      return textContent.items
+                        .map((item) => item.str)
+                        .join(" ");
+                    });
+                  })
                 );
               }
 
-              Promise.all(pagePromises).then(() => {
+              Promise.all(pagesPromises).then(function (pagesContents) {
                 document.getElementById("input-text").value =
-                  textContent.trim();
+                  pagesContents.join("\n\n");
               });
+            })
+            .catch(function (error) {
+              console.error("Error loading PDF:", error);
+              showNotification("Error loading PDF file", "danger");
             });
-          };
-          reader.readAsArrayBuffer(file);
-        } else if (
+        }
+        // For Word documents
+        else if (
           fileType ===
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ) {
           reader.onload = function (e) {
             const arrayBuffer = e.target.result;
-
-            const doc = new docx.Document(arrayBuffer);
-            let textContent = "";
-
-            doc.load().then(() => {
-              doc.paragraphs.forEach((paragraph) => {
-                textContent += paragraph.text + "\n";
+            docx
+              .renderAsync(arrayBuffer)
+              .then((text) => {
+                document.getElementById("input-text").value = text;
+              })
+              .catch((error) => {
+                console.error("Error reading DOCX file:", error);
+                showNotification("Error reading DOCX file", "danger");
               });
-              document.getElementById("input-text").value = textContent.trim();
-            });
           };
           reader.readAsArrayBuffer(file);
         } else {
-          alert(
-            "Unsupported file type. Please upload a text, PDF, or Word file."
+          showNotification(
+            "Unsupported file type. Please upload a text, PDF, or Word file.",
+            "danger"
           );
         }
       }
+
+      // Add this line to initialize PDF.js worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
       function sendData() {
         const inputText = document.getElementById("input-text").value;
@@ -597,7 +577,7 @@
           'input[name="summary-type"]:checked'
         );
         const selectedValue = summaryType ? summaryType.value : null;
-        const summarySize = summarySizeSlider.value;
+        const summarySize = document.getElementById("summary-size").value;
 
         const requestData = {
           text: inputText,
@@ -607,23 +587,32 @@
 
         if (requestData.text.length < 100) {
           showNotification("At least give 50 words to summarize", "danger");
-          console.log("At least give 50 words to summarize");
         } else if (requestData.type == null) {
           showNotification("Select summary type", "danger");
-          console.log("Select summary type");
         } else {
           // Show loader animation
           const loader = document.getElementById("loader");
           loader.classList.add("show-loader");
 
-          fetch("http://127.0.0.1:5000/summarize", {
+          fetch(`${API_URL}/summarize`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(requestData),
+            credentials: "include", // Important for session cookies
           })
-            .then((response) => response.json())
+            .then((response) => {
+              if (!response.ok) {
+                if (response.status === 401) {
+                  // Unauthorized - redirect to login
+                  window.location.href = `${API_URL}/login`;
+                  throw new Error("Please login to use this feature");
+                }
+                throw new Error("Server error");
+              }
+              return response.json();
+            })
             .then((data) => {
               loader.classList.remove("show-loader");
               document.getElementById("summary-output").innerText =
@@ -632,12 +621,12 @@
             .catch((error) => {
               loader.classList.remove("show-loader");
               console.error("Error:", error);
-              document.getElementById("summary-output").innerText =
-                "Error connecting to Flask";
+              showNotification(error.message, "danger");
             });
         }
       }
 
+      // Update the summary size display when slider is moved
       const summarySizeSlider = document.getElementById("summary-size");
       const summarySizeDisplay = document.getElementById(
         "summary-size-display"
@@ -647,66 +636,21 @@
         summarySizeDisplay.textContent = `${this.value}%`;
       });
 
-      function generateSummary() {
-        
-        const inputText = document.getElementById("input-text").value;
-        const summaryType = document.querySelector(
-          'input[name="summary-type"]:checked'
-        );
-        const summarySize = summarySizeSlider.value;
-        const summaryOutput = document.getElementById("summary-output");
-
-        if (!inputText) {
-          alert("Please enter text to summarize");
-          return;
-        }
-
-        if (!summaryType) {
-          alert("Please select a summary type");
-          return;
-        }
-
-        const words = inputText.split(" ");
-        const summaryLength = Math.floor(words.length * (summarySize / 100));
-        const summary = words.slice(0, summaryLength).join(" ") + "...";
-
-        summaryOutput.textContent = summary;
-      }
-
-      function openModal(modalId) {
-        document.getElementById(modalId).style.display = "block";
-      }
-
-      function closeModal(modalId) {
-        document.getElementById(modalId).style.display = "none";
-      }
-
-      window.onclick = function (event) {
-        const modals = document.getElementsByClassName("modal");
-        for (let modal of modals) {
-          if (event.target == modal) {
-            modal.style.display = "none";
-          }
-        }
-      };
-
       function logout() {
-        window.location.href = "http://127.0.0.1:5000/logout";
-        console.log("logout");
+        window.location.href = `${API_URL}/logout`;
       }
 
       function showNotification(message, type) {
         const container = document.getElementById("notificationContainer");
-
         const alert = document.createElement("div");
         alert.className = `alert alert-${type} alert-dismissible fade show`;
         alert.role = "alert";
         alert.innerHTML = `
-        ${message}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          ${message}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
-        </button>
-    `;
+          </button>
+        `;
 
         container.appendChild(alert);
 
@@ -716,9 +660,9 @@
         }, 3000);
       }
 
+      // Show welcome popup if first visit
       if (!localStorage.getItem("visited")) {
         document.getElementById("welcome-popup").style.display = "flex";
-
         localStorage.setItem("visited", "true");
       }
 
