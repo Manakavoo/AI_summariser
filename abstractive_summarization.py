@@ -15,6 +15,12 @@ def abstractive_sum(text,summary_percentage=30):
 
 def gemini_summary(text,summary_percentage=30,api_key=API_KEY):
     
+    max_input_words = 1200
+    words = text.split()
+    
+    if len(words) > max_input_words:
+        text = ' '.join(words[:max_input_words])
+
     client = genai.Client(api_key=api_key)
 
     text_prompt = f"""Summarize the following text to approximately {summary_percentage} % Percentage of its original length {len(text.split())}. 
